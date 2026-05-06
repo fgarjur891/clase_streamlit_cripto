@@ -44,18 +44,21 @@ def obtener_precios():
         print(f"Error al llamar a la API: {e}")
         return None
 
-# Inicializar session state
+#Inicializar session state
 if 'historial' not in st.session_state:
      st.session_state['historial'] = []
 
 precios = obtener_precios()
 
-nuevo_punto={
-     'tiempo': precios["timestamp"],
-     'Bitcoin': precios['Bitcoin']['precio'],
-     'Ethereum': precios['Ethereum']['precio'],
-     'Solana': precios['Solana']['precio'],
+nuevo_punto = {
+        'tiempo': precios["timestamp"],
+        'Bitcoin': precios['Bitcoin']['precio'],
+        'Ethereum': precios['Ethereum']['precio'],
+        'Solana': precios['Solana']['precio'],
 }
+
+st.session_state['historial'].append(nuevo_punto)
+
 
 if precios is None:
         st.error("No se pudo conectar coj la API. Reintentando....")
@@ -67,14 +70,43 @@ st.caption(f'Última actualización: {precios["timestamp"]}')
 st.divider()
 
 kpi1,kpi2,kpi3 = st.columns(3)
-kpi1.metric("Bitcoin", f'{precios['Bitcoin']['precio']:,.0f} €',f'{precios['Bitcoin']['cambio']:+.2f} % (24h)')
-kpi2.metric("Ethereum", f'{precios['Ethereum']['precio']:,.0f} €',f'{precios['Ethereum']['cambio']:+.2f} % (24h)')
-kpi3.metric("Solana", f'{precios['Solana']['precio']:,.0f} €',f'{precios['Solana']['cambio']:+.2f} % (24h)')
+kpi1.metric("Bitcoin", f"{precios['Bitcoin']['precio']:,.0f} €",f"{precios['Bitcoin']['cambio']:+.2f} % (24h)")
+kpi2.metric("Ethereum", f"{precios['Ethereum']['precio']:,.0f} €",f"{precios['Ethereum']['cambio']:+.2f} % (24h)")
+kpi3.metric("Solana", f"{precios['Solana']['precio']:,.0f} €",f"{precios['Solana']['cambio']:+.2f} % (24h)")
 
 st.divider()
 
+#Gráficos
 col_izq, col_der = st.columns(2)
 
+with col_izq:
+    #Gráfico del histórico
+    df = pd.DataFrame(st.session_state['historial'])
+    fig_lineas = px.line(
+        df,
+        x='tiempo',
+        y= ['Bitcoin','Ethereum','Solana'],
+        title='Evolucion de precio durante la sesión',
+        template='plotly_dark',
+        markers=True,
+    )
+    fig_lineas.update_layout(showlegend=False)
+    st.plotly_chart(fig_lineas,width="stretch")
+with col_der: 
+    nombres= ['Bitcoin','Ethereum','Solana']
+    colores = ['orange','royalblue','purple']  
+    precios_lista = [precios[m]['precio'] for m in nombres]
+    fig_barras = px.bar(
+        x=nombres,
+        y=precios_lista,
+        color=nombres,
+        color_discrete_sequence=colores,
+        labels={'x': 'Moneda', 'y':'Precio (€)'},
+        title='Precio actual en €',
+        template='plotly_dark',
+    )
+    fig_barras.update_layout(showlegend=False)
+    st.plotly_chart(fig_barras,width="stretch")
 
 time.sleep(INTERVALO_SEGUNDOS)
 st.rerun()
