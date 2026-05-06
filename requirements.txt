@@ -1,7 +1,5 @@
 streamlit
 requests
-plotly.express
-pandas
-datetime
-time
+plotly
+Pandas
 pytz
